@@ -64,11 +64,14 @@ class ModelBert:
         ).to(self.device)
         return self.model, self.tokenizer
 
-    def load_model(self,model_dir):
-        """This function loads the models and processes the data for evaluation"""        
-        self.state_dict = torch.load(
-            os.path.join(self.config["saved_model_name"]), map_location=self.device
-        )
+    def load_model(self, model_dir):
+        """This function loads the models and processes the data for evaluation"""
+        # self.state_dict = torch.load(
+        #     os.path.join(self.config["saved_model_name"]), map_location=self.device
+        # )
+        print("going to load the model")
+        self.state_dict = torch.load(os.path.join(model_dir), map_location=self.device)
         model1, _ = self.make_model()
         model1.load_state_dict(self.state_dict)
+        print(" RETURNING THE LOADED MODEL")
         return model1

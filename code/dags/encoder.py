@@ -6,7 +6,6 @@ class Encoder:
     def __init__(self, config, data):
         """
         Initializes an Encoder object.
-
         Args:
             data: The data to be encoded.
             config (dict): A dictionary containing configuration parameters for the encoder.
@@ -144,3 +143,18 @@ class Encoder:
         self.encoded_data["links"] = urls_list
         self.encoded_data["class"] = class_list
         return self.encoded_data
+
+    def text_encoder(self, text_blob):
+        """
+        Encodes the data by processing the text, URLs, and classes.
+        input: text_blob of string
+        Returns:
+            str: encoded blob of string
+
+        """
+        counter = text_blob.split()
+        if len(counter) <= 400:
+            text = text_blob
+        elif len(counter) > 400:
+            text = self.extract_text(text_blob)
+        return text

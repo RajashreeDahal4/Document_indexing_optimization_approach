@@ -7,6 +7,7 @@ import torch
 from encoder import Encoder
 from model import ModelBert
 from preprocessing import Preprocessor
+import time
 
 
 class TestPredictor:
@@ -15,10 +16,7 @@ class TestPredictor:
     """
 
     def __init__(self, config):
-        # model = ModelBert.from_dict(config)
-        # self.loaded_model = model.load_model()
-        # self.device = torch.device("cpu")
-        self.device=torch.device(config['model_parameters']['device'])
+        self.device = torch.device(config["model_parameters"]["device"])
         self.dataframe = pd.DataFrame()  # columns=['text','class']
         self.config = config
         self.classes = self.config["classes"]
@@ -75,7 +73,6 @@ class TestPredictor:
                                 Otherwise, returns the encoded test data as a DataFrame.
 
         """
-        print("inside process test data functino")
         self.dataframe["links"] = urls
         self.dataframe["class"] = [3 for i in urls]  # any random class
         processor = Preprocessor.from_dict(self.config, self.dataframe)
@@ -85,10 +82,8 @@ class TestPredictor:
             self.image_lists,
         ) = processor.preprocessed_features()
         self.dataframe["text"] = self.dataframe["soup"]
-        print("going to encoder")
         encoder = Encoder.from_dict(self.config, self.dataframe)
         encoded_data = encoder.encoder()
-        print("stepping out from encoder")
         return encoded_data, self.pdf_lists, self.image_lists
 
     def tokenize_test_data(self, encoded_data):
@@ -131,9 +126,23 @@ class TestPredictor:
             attention_masks.append(encoded_dict["attention_mask"])
         input_ids = torch.cat(input_ids, dim=0)
         attention_masks = torch.cat(attention_masks, dim=0)
+        print("The shapes are ", input_ids.shape, attention_masks.shape)
         return input_ids, attention_masks, links
 
-    def predict_test_data(self, inference_dataloader,loaded_model):
+    def tokenize_text_data(self, text_blob):
+        module_name = self.config["model_parameters"]["module_name"]
+        transformers = importlib.import_module(module_name)
+        # Dynamically get the model class from transformers module
+        tokenizer_class = getattr(
+            transformers, self.config["model_parameters"]["tokenizer"]
+        )
+        tokenizer = tokenizer_class.from_pretrained(
+            self.config["model_parameters"]["model_type"]
+        )
+        inputs = tokenizer(text_blob, return_tensors="pt")
+        return inputs["input_ids"], inputs["attention_mask"]
+
+    def predict_test_data(self, inference_dataloader, loaded_model):
         """
         Predicts the category of the inference data given inference dataloader
         Parameters:
@@ -144,12 +153,9 @@ class TestPredictor:
         # tracking variables
         predictions = []
         for batch in inference_dataloader:
-            # Add batch to CPU
             batch = tuple(t.to(self.device) for t in batch)
             # Unpack the inputs from our dataloader
             b_input_ids, b_input_mask = batch
-            # Telling the model not to compute or store gradients, saving memory and
-            # speeding up prediction
             with torch.no_grad():
                 # Forward pass, calculate logit predictions.
                 result = loaded_model(

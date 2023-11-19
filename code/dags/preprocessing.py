@@ -50,8 +50,11 @@ class Preprocessor:
         data_urls = self.data.links.values
         soups, urls, classes = [], [], []
         for enum, each_url in enumerate(data_urls):
+            print("The url is", each_url)
             try:
-                response = requests.get(each_url)
+                response = requests.get(
+                    each_url, timeout=(5, 1)
+                )  # (connect_timeout,read_timeout)
             except Exception:
                 continue
             content_type = response.headers.get("Content-Type")
@@ -64,9 +67,10 @@ class Preprocessor:
                 text = get_text_table(soup)
                 text = re.sub(r"\W+", " ", text)
                 if text == "" or text is None:
-                    soup, text = asyncio.get_event_loop().run_until_complete(
-                        scraper(each_url)
-                    )
+                    # soup, text = asyncio.get_event_loop().run_until_complete(
+                    #     scraper(each_url)
+                    # )
+                    continue
                 result = soup.find("header")
                 if result:
                     result.extract()  # removing header element from the HTML code
@@ -105,4 +109,5 @@ class Preprocessor:
         self.data["soup"] = self.data["soup"].apply(
             lambda x: re.sub(r"\W+", " ", get_text_table(x).strip())
         )
+        print(self.data, self.pdf_lists, self.image_lists, type(self.image_lists))
         return self.data, self.pdf_lists, self.image_lists

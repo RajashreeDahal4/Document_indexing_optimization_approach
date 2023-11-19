@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader, SequentialSampler, TensorDataset
 
 
 class DataLoad:
-    def __init__(self, batch_size=8):
+    def __init__(self, batch_size=10):
         """
         Initializes a new instance of the class.
 
